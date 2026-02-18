@@ -1,5 +1,14 @@
 <html>
 <script>
+    document.addEventListener("DOMContentLoaded", (event) => {
+        console.log("DOM fully loaded and parsed");
+        const room_id = 1;
+        //const courseId = JSON.parse(document.getElementById('course-id').textContent);
+        const url = 'ws://' + window.location.host +
+        '/ws/chat/room/' + room_id + '/';
+        const chatSocket = new WebSocket(url);
+    });
+
 </script>
 <body>
 
