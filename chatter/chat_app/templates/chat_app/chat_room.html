@@ -7,8 +7,32 @@
         const url = 'ws://' + window.location.host +
         '/ws/chat/room/' + room_id + '/';
         const chatSocket = new WebSocket(url);
-    });
 
+        chatSocket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            const chat = document.getElementById('chat');
+            chat.innerHTML += '<div class="message">' + data.message + '</div>';
+            chat.scrollTop = chat.scrollHeight;
+        };
+        chatSocket.onclose = function(event) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        const input = document.getElementById('chat-message-input');
+        //alert ('document: ' + document);
+        const submitButton = document.getElementById('chat-message-submit');
+        //alert ('submitButton: ' + submitButton);
+        submitButton.addEventListener('click', function(event) {
+            const message = input.value;
+            if(message) {
+            // send message in JSON format
+                chatSocket.send(JSON.stringify({'message': message}));
+                // clear input
+                input.value = '';
+                input.focus();
+                }
+        });
+    });
 </script>
 <body>
 
