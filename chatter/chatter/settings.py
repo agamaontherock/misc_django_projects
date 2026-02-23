@@ -128,3 +128,6 @@ CHANNEL_LAYERS = {
  },
  },
 }
+
+LOGIN_URL = 'chat:login'
+LOGIN_REDIRECT_URL = '/chat/room/1/'
