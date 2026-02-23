@@ -9,14 +9,15 @@ class Message(models.Model):
         related_name="chat_messages",
     )
 
-    course = models.ForeignKey(
-        "courses.Course",
-        on_delete=models.PROTECT,
-        related_name="chat_messages",
-    )
+    # course = models.ForeignKey(
+    #     "courses.Course",
+    #     on_delete=models.PROTECT,
+    #     related_name="chat_messages",
+    # )
+    room = models.IntegerField()
 
     content = models.TextField()
     sent_on = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user} on {self.course} at {self.sent_on}"
+        return f"{self.user} on {self.room} at {self.sent_on}"  
