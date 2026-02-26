@@ -1,58 +1,215 @@
-<html>
-<script>
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chat</title>
 
-document.addEventListener("DOMContentLoaded",(event) => {
-    const roomId = 1 
-    const url = 'ws://' + window.location.host +
-        '/ws/chat/room/' + roomId + '/';
-    const chatSocket = new WebSocket(url);
+    {% load static %}
 
-    chatSocket.onmessage = function(event) {
-        const data = JSON.parse(event.data);
-        const chat = document.querySelector('#chat');
-        chat.innerHTML += '<div class="message">' +
-        data.message + '</div>';
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: #f4f6f8;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #chat-container {
+        max-width: 900px;
+        margin: 0 auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: #ffffff;
+        border-left: 1px solid #e0e0e0;
+        border-right: 1px solid #e0e0e0;
+      }
+
+      #chat {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+      }
+
+      .message {
+        display: flex;
+        margin-bottom: 12px;
+      }
+
+      .message.own {
+        justify-content: flex-end;
+      }
+
+      .message.other {
+        justify-content: flex-start;
+      }
+
+      .message-card {
+        max-width: 70%;
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 10px 12px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      }
+
+      .message.own .message-card {
+        background: #e7f1ff;
+      }
+
+      .message-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        margin-bottom: 4px;
+        color: #666;
+      }
+
+      .message-header .username {
+        font-weight: 600;
+        color: #333;
+      }
+
+      .message-body {
+        font-size: 14px;
+        color: #212529;
+        line-height: 1.4;
+        word-wrap: break-word;
+      }
+
+      #chat-input {
+        display: flex;
+        padding: 12px;
+        border-top: 1px solid #e0e0e0;
+        background: #fafafa;
+      }
+
+      #chat-message-input {
+        flex: 1;
+        padding: 10px 12px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        outline: none;
+      }
+
+      #chat-message-input:focus {
+        border-color: #007bff;
+      }
+
+      #chat-message-submit {
+        margin-left: 8px;
+        padding: 10px 18px;
+        font-size: 14px;
+        border: none;
+        border-radius: 6px;
+        background: #007bff;
+        color: #ffffff;
+        cursor: pointer;
+      }
+
+      #chat-message-submit:hover {
+        background: #0069d9;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="chat-container">
+      <div id="chat"></div>
+
+      <form id="chat-input">
+        {% csrf_token %}
+        <input
+          id="chat-message-input"
+          type="text"
+          placeholder="Введіть повідомлення…"
+          autocomplete="off"
+        />
+        <input id="chat-message-submit" type="submit" value="Send" />
+      </form>
+    </div>
+
+    <script>
+      const chat = document.getElementById("chat");
+      const input = document.getElementById("chat-message-input");
+      const submitButton = document.getElementById("chat-message-submit");
+
+      function renderMessage({ message, username, time, isOwn }) {
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("message", isOwn ? "own" : "other");
+
+        const card = document.createElement("div");
+        card.classList.add("message-card");
+
+        const header = document.createElement("div");
+        header.classList.add("message-header");
+
+        const userEl = document.createElement("span");
+        userEl.classList.add("username");
+        userEl.textContent = username;
+
+        const timeEl = document.createElement("span");
+        timeEl.classList.add("time");
+        timeEl.textContent = time;
+
+        header.appendChild(userEl);
+        header.appendChild(timeEl);
+
+        const body = document.createElement("div");
+        body.classList.add("message-body");
+        body.textContent = message;
+
+        card.appendChild(header);
+        card.appendChild(body);
+        wrapper.appendChild(card);
+        chat.appendChild(wrapper);
+
         chat.scrollTop = chat.scrollHeight;
-    };
+      }
 
-    chatSocket.onclose = function(event) {
-        console.error('Chat socket closed unexpectedly');
-    };
+      document.addEventListener("DOMContentLoaded", () => {
+        const roomId = 1;
+        const socket = new WebSocket(
+          "ws://" + window.location.host + "/ws/chat/room/" + roomId + "/",
+        );
 
-    
-    const input = document.querySelector('#chat-message-input');
-    const submitButton = document.querySelector('#chat-message-submit');
-    submitButton.addEventListener('click', function(event) {
-        const message = input.value;
-        if(message) {
-            // send message in JSON format
-            chatSocket.send(JSON.stringify({'message': message}));
-            // clear input
-            input.value = '';
-            input.focus();
-        }
-        input.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                // cancel the default action, if needed
-                event.preventDefault();
-                // trigger click event on button
-                submitButton.click();
-            }
+        const CURRENT_USER_ID = {{ request.user.id }};
+
+          socket.onmessage = (event) => {
+              const data = JSON.parse(event.data);
+
+              renderMessage({
+              message: data.message,
+              username: data.username,
+              time: data.time,
+              isOwn: data.sender_id === CURRENT_USER_ID,
+              });
+          };
+        submitButton.addEventListener("click", (e) => {
+            e.preventDefault();
+          const message = input.value.trim();
+          if (!message) return;
+
+          socket.send(JSON.stringify({ message }));
+          input.value = "";
         });
-    });
-})
 
-
-   
-</script>
-<body>
-
-<div id="chat">
-</div>
-
-<div id="chat-input">
-    <input id="chat-message-input" type="text">
-    <input id="chat-message-submit" type="submit" value="Send">
-</div>
-</body>
+        input.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            {% comment %} submitButton.click(); {% endcomment %}
+          }
+        });
+      });
+    </script>
+  </body>
 </html>
