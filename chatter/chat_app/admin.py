@@ -9,3 +9,4 @@ class MessageAdmin(admin.ModelAdmin):
     raw_id_fields = ['user']
 
 # Register your models here.
+
